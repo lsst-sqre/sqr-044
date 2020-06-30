@@ -22,6 +22,9 @@ Some numbers may be missing if requirements are deleted.
 `LDM-554 <https://ldm-554.lsst.io/>`__ defines the general requirements for the Science Platform.
 Requirements from this document that also meet those higher-level requirements will be marked with the requirement identifier from that document.
 
+`LSE-279 <https://docushare.lsst.org/docushare/dsweb/ServicesLib/LSE-279/History>`__ defines the requirements for identity management for Rubin Observatory at a higher level.
+The requirements here are consistent with the requirements in that document.
+
 This is not a design or architecture document for the identity management component.
 That will come in a later document once an implementation strategy has been chosen to satisfy these requirements.
 
@@ -43,7 +46,7 @@ IDM-0002
 
 IDM-0003
     Prospective users may authenticate through another federated identity provider.
-    In this case, their pending account request will be held for approval by an existing user with authority to approve new accounts.
+    In this case, their pending account request will be held for approval by someone with authority to determine their data and access rights.
     This flow will be used to handle collaborators who would not otherwise have the necessary affiliation to create an account.
 
 IDM-0004
@@ -62,7 +65,7 @@ IDM-0006
 
 IDM-0007
     Users with administrative access to the Science Platform (for example, the ability to impersonate other users) must authenticate with two authentication factors.
-    These will generally a password or some equivalent, and some additional security token bound to a sandboxed device (not a general-purpose laptop), such as an OTP authenticator on a mobile phone.
+    These will generally be a password or some equivalent, and some additional security token bound to a sandboxed device (not a general-purpose laptop), such as an OTP authenticator on a mobile phone.
     Since all authentication is via federated identity (IDM-0001), this must be implemented by requiring authentication from an external provider that, in turn, requires two-factor authentication.
     GitHub or Google (IDM-0005), with appropriate configuration, would be suitable.
 
@@ -74,9 +77,11 @@ IDM-0009
     If a user primarily uses non-affiliation-providing identity providers such as Google and GitHub, there must be a mechanism to force the user to reauthenticate using an affiliation-providing identity provider to reconfirm their affiliation.
     This shouldn't be done routinely, but may be necessary periodically to confirm that a user still has an appropriate affiliation.
     One possible mechanism to implement this may be to add an expiration date for the user that is automatically extended when the user logs on with an appropriate identity provider.
+    We do not yet know how affiliation and access rights will be determined or managed, so we may not need this facility, but it must be available in case it is necessary.
 
 IDM-0010
-    Users may select their own account name.
+    Users must select their own account name during initial account creation.
+    This account name need not have anything to do with their federated identity.
     This will be used as the username for Science Platform services and must not contain a ``@`` character (or any other character that causes issues for Science Platform services).
     The account name must not match the name of any existing account.
 
@@ -87,6 +92,8 @@ IDM-0012
     Users must be able to change their account name.
     This change must propagate to all Science Platform services.
     Science Platform services should therefore use a unique identifier rather than the account name (such as the numeric UID provided as part of the account metadata) wherever possible, and if not possible, must explicitly allow for account renaming.
+    Each component that uses the username rather than a UID must therefore have a plan for how to handle renaming and must be able to handle renaming events.
+    The identity management system must have the capability of notifying those services when accounts are renamed.
 
 Token authentication
 --------------------
@@ -118,7 +125,13 @@ IDM-0104
 IDM-0105
     Tokens must not contain a frozen representation of group membership or permissions.
     Updates to the group membership of a user's account should also apply to all tokens issued for that user, provided that the scope of the token allows access.
+    Services that need to know a user's group membership must present the token to the identity management system and ask what groups the corresponding user is in.
+    The answer may change over the lifetime of the token, but may be cached; see IDM-3002 for more information.
     See `SQR-039 <https://sqr-039.lsst.io/>`__ for more discussion.
+
+IDM-0106
+    Accounts that are pending or frozen may not create tokens.
+    Existing tokens for accounts that are pending or frozen must not be accepted as valid authentication.
 
 Logging
 -------
@@ -154,6 +167,7 @@ Status
 
 IDM-1000
     Accounts that are pending approval (under IDM-0003) can authenticate and see their account status and metadata page, but not access any other part of the Science Platform.
+    They may not create tokens.
 
 IDM-1001
     Administrators of the Science Platform must be able to freeze accounts.
@@ -162,7 +176,7 @@ IDM-1001
     Frozen accounts still hold the account name and do not allow it to be reused.
 
 IDM-1002
-    Administrators of the Science Platform must be able delete accounts.
+    Administrators of the Science Platform must be able to delete accounts.
     This is normally used for mistakenly-created accounts, not for accounts that were legitimate and active but should no longer be allowed access.
 
 IDM-1003
@@ -222,6 +236,9 @@ IDM-1303
 IDM-1304
     Administrators must be able to impersonate a user and see the same thing that a user would see in the user metadata interface.
 
+IDM-1305
+    Administrators must be able to impersonate a user to other Science Platform services so that an administrator can debug issues that only affect a single user.
+
 Logging
 -------
 
@@ -269,6 +286,9 @@ IDM-2005
 
 IDM-2006
     Owners must be able to rename groups while preserving all quota grants and membership.
+    Groups must therefore be assigned a unique identifier (GID) that does not change when the group is renamed.
+    Science Platform services should use that identifier rather than the group name wherever possible.
+    If not possible, Science Platform services must be prepared for groups to be renamed and handle that appropriately, similar to the requirements for renaming users given in IDM-0012.
 
 IDM-2007
     Owners must be able to delete groups.
@@ -303,7 +323,7 @@ IDM-2200
     All group creation, deletion, renaming, and membership changes must be logged.
 
 IDM-2201
-    Owners must be able to see all history of changes to the group via the web interface.
+    Owners must be able to see, via the web interface, all history of changes to the group.
 
 IDM-2202
     All changes to quotas associated with groups must be logged.
@@ -336,3 +356,10 @@ IDM-3000
 IDM-3001
     All actions possible for an administrator to perform in the identity management system must be available via an administrative API as well.
     This should use separate authentication credentials from user-issued tokens for administrative users.
+
+IDM-3002
+    Science Platform components may cache the results of read-only API calls to the identity management system, including such information as group membership for a given token and user.
+    The validity of that cache sets a bound on how quickly a token can be revoked.
+    Science Platform components should refresh that information every five minutes, and no less frequently than once per hour.
+    They should not query for the same information from the same token more frequently than every thirty seconds.
+    The identity management system must be able to handle this volume of queries.
