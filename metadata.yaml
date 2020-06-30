@@ -37,14 +37,16 @@ authors:
 copyright: "2020, Association of Universities for Research in Astronomy, Inc. (AURA)"
 
 # Description. A short, 1-2 sentence statemement used by document indices.
-description: "Requirements for the identity management component of the Science Platform."
+description: >-
+  Requirements for the identity management component of the Science Platform.
 
 # Abstract, if available
-# abstract: >
-#           Write your paragraph
-#           here with multiple lines.
-#
-#           You can have multiple paragraphs too.
+abstract: >-
+  The identity management component of the Science Platform holds the list
+  of authorized users, their group information, bindings from those users
+  to external authentication providers, and associated metadata for both
+  users and groups, such as quotas and other limits.  This document sets
+  out the requirements for that component.
 
 # URL where this document is published by Read the Docs. e.g. http://sqr-001.lsst.codes
 url: "https://sqr-044.lsst.io"
