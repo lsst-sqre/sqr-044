@@ -20,7 +20,8 @@ These will not be reused when requirements are added or removed.
 Some numbers may be missing if requirements are deleted.
 
 `LDM-554 <https://ldm-554.lsst.io/>`__ defines the general requirements for the Science Platform.
-Requirements from this document that also meet those higher-level requirements will be marked with the requirement identifier from that document.
+An identity management system that meets the requirements of this document will help satisfy requirements DMS-LSP-REQ-0020 (Authenticated User Access) and DMS-LSP-REQ-0007 (Abide by the Data Access Policies) of that document.
+Specific requirements for the identity management system that derive from other Science Platform requirements in LDM-554 are marked with the requirement identifiers from that document.
 
 `LSE-279 <https://docushare.lsst.org/docushare/dsweb/ServicesLib/LSE-279/History>`__ defines the requirements for identity management for Rubin Observatory at a higher level.
 The requirements here are consistent with the requirements in that document.
@@ -41,8 +42,8 @@ IDM-0001
     [DMS-LSP-REQ-0023]
 
 IDM-0002
-    Authentication for most users will be via the InCommon federation.
-    Metadata provided by the prospective user's local identity provider via the InCommon federation will be used to determine affiliation in order to decide if a user should be able to create an account.
+    For most prospective users, initial authentication in order to create a Science Platform account will be via the InCommon federation.
+    Metadata provided by the prospective user's local identity provider via the InCommon federation may be used to determine affiliation in order to decide if a user should be able to create an account.
 
 IDM-0003
     Prospective users may authenticate through another federated identity provider.
@@ -51,8 +52,8 @@ IDM-0003
 
 IDM-0004
     Once a user has created an account, they may attach additional federated identities to the same account.
-    This should require authentication via one of their current identity providers and then via the new identity provider.
-    Once this has been done, both identities will map to the same account in the Science Platform.
+    This should require authentication via one of their current identity providers and then via the new identity provider for each new federated identity.
+    Once this has been done, all such identities will map to the same account in the Science Platform.
     This allows users with multiple institutional affiliations to use whichever authentication provider is most convenient for them.
     [DMS-LSP-REQ-0024]
 
@@ -93,7 +94,14 @@ IDM-0012
     This change must propagate to all Science Platform services.
     Science Platform services should therefore use a unique identifier rather than the account name (such as the numeric UID provided as part of the account metadata) wherever possible, and if not possible, must explicitly allow for account renaming.
     Each component that uses the username rather than a UID must therefore have a plan for how to handle renaming and must be able to handle renaming events.
+    This includes changes to home directory paths within the Notebook Aspect.
     The identity management system must have the capability of notifying those services when accounts are renamed.
+
+IDM-0013
+    When creating a new account, the user must be prompted for a preferred email address, possibly prepopulated with information from the identity provider.
+    If a user with that email address already exists, the user must be prompted if they're sure they want to continue or if instead they want to use the existing account.
+    This requirement will hopefully reduce the risk of duplicate accounts for the same person.
+    (Also see IDM-1101.)
 
 Token authentication
 --------------------
@@ -101,7 +109,6 @@ Token authentication
 IDM-0100
     Users may generate access tokens to use with API calls to the Science Platform.
     Access tokens must have an associated name chosen by the user.
-    Users must be able to see a list of all their current access tokens (the names only, not the values) and revoke any access token.
 
 IDM-0101
     User access tokens must not grant access to any administrative Science Platform function or permit changes to a user's account metadata or authentication information.
@@ -109,27 +116,31 @@ IDM-0101
 
 IDM-0102
     Users may set an expiration time on user-generated access tokens.
-    By default, user-generated access tokens do not expire, although their permisisons are tied to the user's own permissions and thus they may become unusuable if the account is frozen or deleted or its access permissions change.
+    By default, user-generated access tokens do not expire, although their permissions are tied to the user's own permissions and thus they may become unusable if the account is frozen or deleted or its access permissions change.
 
 IDM-0103
     Internal Science Platform components may also generate temporary access tokens to facilitate multi-layer services.
-    These tokens must also be shown on the user's token list and the user must be able to revoke them, but they should be visually separated from user-created access tokens.
     Internal temporary access tokens must expire in a reasonable length of time, such as shortly after the expected maximum duration of the operation for which they were intended.
 
 IDM-0104
     Tokens should be scoped to restrict their power.
     However, the number of scopes should not be so large as to be overwhelming.
     A user should be able to easily choose the necessary scope of a token for common token-based workflows.
-    User-visible scopes should be limited to at most a few dozen, preferrably fewer.
+    User-visible scopes should be limited to at most a few dozen, preferably fewer.
+    The available scopes for tokens may vary by user and must be restricted to the list of scopes that user has access to based on their group membership.
 
 IDM-0105
+    Users must be able to see a list of all their current access tokens, including the names, creation dates, expiration times (if any), and associated scopes (but not including the value of the token).
+    This must include internal temporary access tokens, although those should be visually separated from user-created access tokens.
+
+IDM-0106
     Tokens must not contain a frozen representation of group membership or permissions.
     Updates to the group membership of a user's account should also apply to all tokens issued for that user, provided that the scope of the token allows access.
     Services that need to know a user's group membership must present the token to the identity management system and ask what groups the corresponding user is in.
     The answer may change over the lifetime of the token, but may be cached; see IDM-3002 for more information.
     See `SQR-039 <https://sqr-039.lsst.io/>`__ for more discussion.
 
-IDM-0106
+IDM-0107
     Accounts that are pending or frozen may not create tokens.
     Existing tokens for accounts that are pending or frozen must not be accepted as valid authentication.
 
@@ -157,7 +168,7 @@ IDM-0205
     When displaying the list of user-generated tokens, the date and time at which a user-generated token was last used must be shown alongside the token name.
 
 IDM-0206
-    Users must be notified via email of any change to their linked federated identities or any creation or deletion of a new user-generated token.
+    Users must be notified via email of any change to their linked federated identities or any creation or revocation of a new user-generated token.
 
 Account management
 ==================
@@ -173,6 +184,7 @@ IDM-1001
     Administrators of the Science Platform must be able to freeze accounts.
     Frozen accounts may be placed in a state where they cannot authenticate at all, or in a state where they can only see their account status and metadata page but no other part of the Science Platform.
     A reason viewable by other administrators should be associated with a frozen account.
+    The reason may contain any non-control UTF-8 character.
     Frozen accounts still hold the account name and do not allow it to be reused.
 
 IDM-1002
@@ -193,11 +205,26 @@ Metadata
 IDM-1100
     A full name must be associated with each account and prepopulated with information from the identity provider.
     The user must be able to change the full name to anything they wish.
+    The full name may include any non-control UTF-8 character.
 
 IDM-1101
-    An email address must be associated with each account and prepopulated with information from the identity provider.
+    An email address must be associated with each account, chosen during account creation, and prepopulated with information from the identity provider if available.
     The user must be able to change the email address to anything they wish, but they must then verify that the email address is valid and owned by them by responding to a challenge sent to that email address.
+    The old email address must also receive a notification of the change that allows the change to be canceled or reported as fraudulent.
     Challenges for an email address must not contain user-provided content so that they cannot be used for spamming purposes.
+
+IDM-1102
+    Each account must be associated with information about how their eligibility was determined, including whether this was done via an automated process or by manual approval.
+    This eligibility information must include the date that eligibility was last determined, and may include a date at which eligibility needs to be reviewed.
+
+IDM-1103
+    Each account must be tagged with one or more user class markers: US and Chile users with inherent data rights, users with data rights controlled by a Memorandum of Understanding, and Rubin Observatory project members.
+    An account may be in more than one user class at the same time.
+    This may be automatically populated during account creation.
+
+IDM-1104
+    An optional institutional affiliation may be affiliated with each account.
+    This should be automatically populated from federation metadata on account creation.
 
 Quotas
 ------
@@ -239,6 +266,25 @@ IDM-1304
 IDM-1305
     Administrators must be able to impersonate a user to other Science Platform services so that an administrator can debug issues that only affect a single user.
 
+IDM-1307
+    Administrators must be able to revoke user and internal temporary access tokens.
+
+IDM-1308
+    Administrators must be able to view a list of all accounts newly created within a given time period along with the mechanism by which their eligibility was determined.
+    This may be used, for example, to perform subsequent manual review of accounts that were authorized via an automated process.
+
+IDM-1309
+    Administrators must be able to review the eligibility of accounts and update the determination and review dates.
+
+IDM-1310
+    Administrators must be able to change the user class and institutional affiliation of a user.
+
+IDM-1311
+    Administrators must be able to merge two accounts that are discovered retroactively to correspond to the same person.
+    Such merges are expected to be rare and thus may be somewhat manual.
+    For example, a merge may be done by copying group memberships from one account to another and then freezing the account that will no longer be merged.
+    There must be some mechanism to mark an account explicitly as having been merged into another account.
+
 Logging
 -------
 
@@ -251,6 +297,13 @@ IDM-1401
 
 IDM-1402
     Users must be able to see a history of all of their quota changes.
+
+IDM-1403
+    All administrative user impersonation events must be logged, even if the administrator took no actions after impersonating the user.
+
+IDM-1404
+    All changes to user or internal access tokens (creation and revocation) must be logged, including associated metadata such as name, expiration, and scope.
+    If the changes were made by an administrator instead of the user, this must be clearly indicated in the logs.
 
 Groups
 ======
@@ -278,6 +331,7 @@ IDM-2003
 
 IDM-2004
     Groups must be checked against namespace rules that, for instance, force all groups created by a user to start with a specific prefix that includes their username.
+    Group names must be composed of only non-control ASCII characters (not UTF-8 since this may cause interoperability problems with other consumers of the group name).
 
 IDM-2005
     Group membership may include an expiration date.
@@ -295,6 +349,9 @@ IDM-2007
 
 IDM-2008
     Users must be able to see all of their group memberships and their expirations (if any).
+
+IDM-2009
+    It must be possible to set the owner of a group to be another group.
 
 Quotas
 ------
@@ -316,35 +373,40 @@ IDM-2103
     Quota grants may expire.
     The owners of a group must be notified via email of pending quota grant expirations.
 
-Logging
--------
-
-IDM-2200
-    All group creation, deletion, renaming, and membership changes must be logged.
-
-IDM-2201
-    Owners must be able to see, via the web interface, all history of changes to the group.
-
-IDM-2202
-    All changes to quotas associated with groups must be logged.
-
-IDM-2203
-    Group owners must be able to see a history of all changes to their group quotas.
-
-IDM-2204
-    Users must be able to see a history of all changes to their group membership.
-
 Administration
 --------------
 
-IDM-2300
+IDM-2200
     Administrators must be able to create groups, delete groups, rename groups, and change the membership of any group.
 
-IDM-2301
+IDM-2201
     Administrators must be able to change the quota grants and requests for any group.
 
-IDM-2302
+IDM-2202
     Administrators must be able to impersonate a user and see exactly the same group management and display screens that the user would see.
+
+Logging
+-------
+
+IDM-2300
+    All group creation, deletion, renaming, and membership changes must be logged.
+    If the changes were made by an administrator instead of a group owner, this must be clearly indicated in the logs.
+
+IDM-2301
+    Owners must be able to see, via the web interface, all history of changes to the group.
+
+IDM-2302
+    All changes to quotas associated with groups must be logged.
+
+IDM-2303
+    Group owners must be able to see a history of all changes to their group quotas.
+
+IDM-2304
+    Users must be able to see a history of all changes to their group membership.
+
+IDM-2305
+    All administrative user impersonation events must be logged, even if the administrator took no actions after impersonating the user.
+    (This is covered by IDM-1403, but reiterating here since it applies to the group management screens as well.)
 
 API
 ===
@@ -363,3 +425,22 @@ IDM-3002
     Science Platform components should refresh that information every five minutes, and no less frequently than once per hour.
     They should not query for the same information from the same token more frequently than every thirty seconds.
     The identity management system must be able to handle this volume of queries.
+
+IDM-3003
+    The identity management system must provide an API for creating a new quota request.
+    This may be used as part of more complex workflows such as the submission of a science proposal.
+
+Scaling
+=======
+
+IDM-4000
+    The identity management system must be able to handle 10,000 active users and 50,000 total users including disabled and frozen users.
+
+IDM-4001
+    The identity management system must be able to handle 10,000 active groups and 10,000 members of a single group.
+
+IDM-4002
+    The identity management system must be able to retain history of group membership changes for twenty years at a rate of 10 changes per day (100,000 records).
+
+IDM-4003
+    The identity management system must allow a single user to be a member of 50 groups.
