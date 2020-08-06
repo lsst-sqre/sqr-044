@@ -64,6 +64,7 @@ IDM-0003
     **Core requirement.**
     *Supported by identity.lsst.org* using a hack involving groups.
     Accounts that aren't in any groups cannot access the Science Platform and therefore act like pending account requests.
+    However, identity.lsst.org doesn't support finding users without groups, and the user has to request which groups they need to be a member of.
     If this requirement is met, manual approval effort can compensate for not having IDM-0002.
 
 IDM-0004
@@ -131,6 +132,8 @@ IDM-0013
     If a user with that email address already exists, the user must be prompted if they're sure they want to continue or if instead they want to use the existing account.
     This requirement will hopefully reduce the risk of duplicate accounts for the same person.
     (Also see IDM-1101.)
+
+    Not directly supported by identity.lsst.org, although since identity.lsst.org requires NCSA account creation, it's unlikely to have too much of a duplicate account problem.
 
 Token authentication
 --------------------
@@ -243,6 +246,8 @@ IDM-1002
     Administrators of the Science Platform must be able to delete accounts.
     This is normally used for mistakenly-created accounts, not for accounts that were legitimate and active but should no longer be allowed access.
 
+    This may be supported on identity.lsst.org, although not with the privileges the Science Platform administrators currently have.
+
 IDM-1003
     It must be possible to set an expiration date on an account.
     This can be done by Science Platform administrators, or by the person approving access in the IDM-0003 use case.
@@ -260,7 +265,7 @@ IDM-1100
     The full name may include any non-control UTF-8 character.
 
     **Core requirement.**
-    *Supported by identity.lsst.org.*
+    *Supported by identity.lsst.org* although it doesn't support prepopulation, and we have not tested UTF-8.
 
 IDM-1101
     An email address must be associated with each account, chosen during account creation, and prepopulated with information from the identity provider if available.
@@ -283,6 +288,8 @@ IDM-1103
 IDM-1104
     An optional institutional affiliation may be affiliated with each account.
     This should be automatically populated from federation metadata on account creation.
+
+    identity.lsst.org allows the user to record an affiliation, but doesn't automatically populate it.
 
 Quotas
 ------
@@ -308,6 +315,8 @@ Administration
 
 IDM-1300
     Administrators of the Science Platform must be able to modify any of the user's metadata on behalf of the user.
+
+    This may be possible on identity.lsst.org.
 
 IDM-1301
     Administrators of the Science Platform must be able to set and change expiration dates on accounts.
@@ -387,6 +396,9 @@ IDM-2002
     The owner of the group must then be able to add and remove members as they wish.
     Owners must also be able to add additional group owners who can then also control membership in the group.
 
+    identity.lsst.org allows some people to create groups, but not all users.
+    It is possible to add additional group owners.
+
 IDM-2003
     It must be possible to create groups whose membership can only be changed by Science Platform administrators.
 
@@ -410,9 +422,12 @@ IDM-2006
 
 IDM-2007
     Owners must be able to delete groups.
+    This will need to trigger special handling in the Science Platform to handle group-owned data, so should also support configuring a warning before deleting a group and publishing an event of some type when a group is deleted.
 
 IDM-2008
     Users must be able to see all of their group memberships and their expirations (if any).
+
+    identity.lsst.org shows group membership but doesn't support expiration.
 
 IDM-2009
     It must be possible to set the owner of a group to be another group.
@@ -508,8 +523,14 @@ IDM-4000
 IDM-4001
     The identity management system must be able to handle 10,000 active groups and 10,000 members of a single group.
 
+    Unknown whether identity.lsst.org supports this.
+
 IDM-4002
     The identity management system must be able to retain history of group membership changes for twenty years at a rate of 10 changes per day (100,000 records).
 
+    Unknown whether identity.lsst.org supports this.
+
 IDM-4003
     The identity management system must allow a single user to be a member of 50 groups.
+
+    Unknown whether identity.lsst.org supports this.
