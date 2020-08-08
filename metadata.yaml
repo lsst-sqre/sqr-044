@@ -46,7 +46,9 @@ abstract: >-
   of authorized users, their group information, bindings from those users
   to external authentication providers, and associated metadata for both
   users and groups, such as quotas and other limits.  This document sets
-  out the requirements for that component.
+  out the requirements for that component.  It also flags the minimal
+  requirements and the requirements already met by the current
+  identity.lsst.org system.
 
 # URL where this document is published by Read the Docs. e.g. http://sqr-001.lsst.codes
 url: "https://sqr-044.lsst.io"
