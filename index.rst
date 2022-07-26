@@ -9,6 +9,22 @@ The identity management component of the Science Platform holds the list of auth
 This document sets out the requirements for that component.
 It also flags the minimal requirements and the requirements already met by the current identity.lsst.org system.
 
+.. warning::
+
+   This tech note was the first draft of requirements for the identity management system.
+   While it is still useful as a full requirements collection, including of capabilities not yet designed or implemented, some of the details have subsequently changed.
+   Where this tech note contradicts the main identity management tech notes mentioned below, it should be considered obsolete.
+
+   identity.lsst.org, as described in this document, was the first-draft identity management system used when the nascent Science Platform was hosted at NCSA.
+
+   This is part of a tech note series on identity management for the Rubin Science Platform.
+   The primary documents are DMTN-234_, which describes the high-level design; DMTN-224_, which describes the implementation; and SQR-069_, which provides a history and analysis of the decisions underlying the design and implementation.
+   See the `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ for a complete list of related documents.
+
+.. _DMTN-234: https://dmtn-234.lsst.io/
+.. _DMTN-224: https://dmtn-224.lsst.io/
+.. _SQR-069: https://sqr-069.lsst.io/
+
 Intended use
 ============
 
